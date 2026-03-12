@@ -3,10 +3,14 @@
 BRIGHTNESS=-1
 SPEED=()
 GIF="/path/to/file.gif"
-IMG_PATH="/tmp/time.png"
+IMG_PATH="$(mktemp /tmp/image.XXXX.png)"
 FONT="/usr/share/fonts/noto/NotoSans-ThinItalic.ttf"
 CLOCK=
 MON=
+
+cleanup() {
+	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
+}
 
 print_usage() {
 	cat <<-EOF
@@ -84,6 +88,8 @@ refresh_display() {
 		sleep "$2"
 	done
 }
+
+trap cleanup EXIT
 
 [[ -z $GIF ]] && echo "GIF not set!" && exit 1
 
