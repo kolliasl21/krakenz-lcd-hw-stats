@@ -1,9 +1,9 @@
 #!/bin/bash
 
-BRIGHTNESS=-1
 SPEED=()
+BRIGHTNESS=-1
 GIF="/path/to/file.gif"
-IMG_PATH="$(mktemp /tmp/image.XXXX.png)"
+IMG_PATH="$(mktemp -u /tmp/image.XXXX.png)"
 FONT="/usr/share/fonts/noto/NotoSans-ThinItalic.ttf"
 CLOCK=
 MON=
@@ -48,7 +48,7 @@ update_clock_image() {
 	local strtime
 	strtime="$(date +%H:%M)"
 	magick 	-size 320x320 gradient:black-black \
-		-font ${FONT} \
+		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
 		-pointsize 150 \
@@ -62,7 +62,7 @@ update_sensors_image() {
 	declare -a data
 	readarray -t data < <(get_sensor_data)
 	magick 	-size 320x320 gradient:black-black \
-		-font ${FONT} \
+		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
 		-pointsize 80 \
@@ -89,33 +89,36 @@ refresh_display() {
 	done
 }
 
-trap cleanup EXIT
+if ! (return 2>/dev/null); then
 
-[[ -z $GIF ]] && echo "GIF not set!" && exit 1
+	trap cleanup EXIT
 
-liquidctl initialize all > /dev/null 2>&1
+	[[ -z $GIF ]] && echo "GIF not set!" && exit 1
 
-while getopts "b:lgs:c:tmdp" flag; do
-	case "${flag}" in
-		b) BRIGHTNESS="${OPTARG}" ;;
-		l) set_lcd_mode "liquid" ;;
-		g) set_lcd_mode "gif" "${GIF}" ;;
-		s) SPEED+=("${OPTARG}") ;;
-		c) GIF="${OPTARG}" ;; 
-		t) CLOCK=1 ;; 
-		m) MON=1 ;;
-		d) BRIGHTNESS=50 SPEED=(20 40 23 50 30 70); set_lcd_mode "liquid"; break ;;
-		p) BRIGHTNESS=0  SPEED=(35); set_lcd_mode "gif" "${GIF}"; break ;;
-		*) print_usage; exit 0 ;;
-	esac
-done
+	liquidctl initialize all > /dev/null 2>&1
 
-[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]]  && \
-	liquidctl --match NZXT set lcd screen brightness "${BRIGHTNESS}"
+	while getopts "b:lgs:c:tmdp" flag; do
+		case "${flag}" in
+			b) BRIGHTNESS="${OPTARG}" ;;
+			l) set_lcd_mode "liquid" ;;
+			g) set_lcd_mode "gif" "${GIF}" ;;
+			s) SPEED+=("${OPTARG}") ;;
+			c) GIF="${OPTARG}" ;; 
+			t) CLOCK=1 ;; 
+			m) MON=1 ;;
+			d) BRIGHTNESS=50 SPEED=(20 40 23 50 30 70); set_lcd_mode "liquid"; break ;;
+			p) BRIGHTNESS=0  SPEED=(35); set_lcd_mode "gif" "${GIF}"; break ;;
+			*) print_usage; exit 0 ;;
+		esac
+	done
 
-[[ ${#SPEED[@]} -gt 0 ]] && \
-	(IFS=,; liquidctl --match NZXT set pump speed ${SPEED[*]})
+	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] &&
+		liquidctl --match NZXT set lcd screen brightness "${BRIGHTNESS}"
 
-[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
+	[[ ${#SPEED[@]} -gt 0 ]] &&
+		(IFS=,; liquidctl --match NZXT set pump speed ${SPEED[*]})
 
-[[ -n $MON ]] && refresh_display "update_sensors_image" ".5"
+	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
+
+	[[ -n $MON ]] && refresh_display "update_sensors_image" ".5"
+fi
