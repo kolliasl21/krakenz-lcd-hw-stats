@@ -10,6 +10,7 @@ MON=
 
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
+	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON
 }
 
 print_usage() {
