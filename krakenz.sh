@@ -7,6 +7,7 @@ IMG_PATH="$(mktemp -u /tmp/image.XXXX.png)"
 FONT="/usr/share/fonts/noto/NotoSans-ThinItalic.ttf"
 CLOCK=
 MON=
+IMG_RES="320x320"
 Z53_NAME=
 CORSAIR_PSU_NAME=
 
@@ -25,7 +26,8 @@ init
 
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
-	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON Z53_NAME CORSAIR_PSU_NAME
+	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
+		Z53_NAME CORSAIR_PSU_NAME IMG_RES
 }
 
 print_usage() {
@@ -64,11 +66,10 @@ get_sensor_data() {
 		<(echo "$sensor_data")
 }
 
-
 update_clock_image() {
 	local strtime
 	strtime="$(date +%H:%M)"
-	magick 	-size 320x320 gradient:black-black \
+	magick 	-size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
@@ -82,7 +83,7 @@ update_clock_image() {
 update_sensors_image() {
 	declare -a data
 	readarray -t data < <(get_sensor_data)
-	magick 	-size 320x320 gradient:black-black \
+	magick 	-size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
