@@ -7,10 +7,27 @@ IMG_PATH="$(mktemp -u /tmp/image.XXXX.png)"
 FONT="/usr/share/fonts/noto/NotoSans-ThinItalic.ttf"
 CLOCK=
 MON=
+IMG_RES="320x320"
+Z53_NAME=
+CORSAIR_PSU_NAME=
+
+init() {
+	local sensor_data
+	sensor_data=$(sensors -j)
+	Z53_NAME=$(
+		jq -r '.|keys|map(select(.|startswith("z53-hid-3-")))|first' \
+		<(echo "$sensor_data"))
+	CORSAIR_PSU_NAME=$(
+		jq -r '.|keys|map(select(.|startswith("corsairpsu-hid-3-")))|first' \
+		<(echo "$sensor_data"))
+}
+
+init
 
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
-	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON
+	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
+		Z53_NAME CORSAIR_PSU_NAME IMG_RES
 }
 
 print_usage() {
@@ -35,20 +52,20 @@ set_lcd_mode() {
 }
 
 get_sensor_data() {
-	sensors -j | jq '(
-		."amdgpu-pci-2800"."edge"."temp1_input",
-		."z53-hid-3-9"."Coolant temp"."temp1_input", 
-		."k10temp-pci-00c3"."Tctl"."temp1_input", 
-		."amdgpu-pci-2800"."mem"."temp3_input", 
-		."amdgpu-pci-2800"."junction"."temp2_input", 
-		."corsairpsu-hid-3-d"."power +12v"."power2_input"
-	)*10|round/10'
+	sensors -j | jq "(
+		.\"amdgpu-pci-2800\".\"edge\".\"temp1_input\",
+		.\"${Z53_NAME}\".\"Coolant temp\".\"temp1_input\",
+		.\"k10temp-pci-00c3\".\"Tctl\".\"temp1_input\", 
+		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
+		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
+		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\"
+	)*10|round/10"
 }
 
 update_clock_image() {
 	local strtime
 	strtime="$(date +%H:%M)"
-	magick 	-size 320x320 gradient:black-black \
+	magick 	-size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
@@ -62,7 +79,7 @@ update_clock_image() {
 update_sensors_image() {
 	declare -a data
 	readarray -t data < <(get_sensor_data)
-	magick 	-size 320x320 gradient:black-black \
+	magick 	-size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
