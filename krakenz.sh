@@ -52,18 +52,14 @@ set_lcd_mode() {
 }
 
 get_sensor_data() {
-	local sensor_data
-	sensor_data=$(sensors -j)
-	jq '(
-		."amdgpu-pci-2800"."edge"."temp1_input",
-		."k10temp-pci-00c3"."Tctl"."temp1_input", 
-		."amdgpu-pci-2800"."mem"."temp3_input", 
-		."amdgpu-pci-2800"."junction"."temp2_input" 
-	)*10|round/10' <(echo "$sensor_data")
-	jq "(.\"${Z53_NAME}\".\"Coolant temp\".\"temp1_input\")*10|round/10" \
-		<(echo "$sensor_data")
-	jq "(.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\")*10|round/10" \
-		<(echo "$sensor_data")
+	sensors -j | jq "(
+		.\"amdgpu-pci-2800\".\"edge\".\"temp1_input\",
+		.\"${Z53_NAME}\".\"Coolant temp\".\"temp1_input\",
+		.\"k10temp-pci-00c3\".\"Tctl\".\"temp1_input\", 
+		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
+		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
+		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\"
+	)*10|round/10"
 }
 
 update_clock_image() {
@@ -92,13 +88,13 @@ update_sensors_image() {
 		-pointsize 50 \
 		-annotate +0-45      "GPU:${data[0]}" \
 		-pointsize 50 \
-		-annotate +0+0   "Coolant:${data[4]}" \
+		-annotate +0+0   "Coolant:${data[1]}" \
 		-pointsize 50 \
-		-annotate +0+45      "CPU:${data[1]}" \
+		-annotate +0+45      "CPU:${data[2]}" \
 		-pointsize 30 \
-		-annotate +0+80   "GPUMem:${data[2]}" \
+		-annotate +0+80   "GPUMem:${data[3]}" \
 		-pointsize 30 \
-		-annotate +0+110  "GPUHot:${data[3]}" \
+		-annotate +0+110  "GPUHot:${data[4]}" \
 		-pointsize 20 \
 		-annotate +0+135 "PSU12VR:${data[5]}W" "${IMG_PATH}"
 	set_lcd_mode "static" "${IMG_PATH}"
