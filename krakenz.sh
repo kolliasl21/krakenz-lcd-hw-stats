@@ -10,6 +10,7 @@ MON=
 IMG_RES="320x320"
 Z53_NAME=
 CORSAIR_PSU_NAME=
+LIQUID_COOLER_NAME="NZXT"
 
 init() {
 	local sensor_data
@@ -27,7 +28,7 @@ init
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
 	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
-		Z53_NAME CORSAIR_PSU_NAME IMG_RES
+		Z53_NAME CORSAIR_PSU_NAME IMG_RES LIQUID_COOLER_NAME
 }
 
 print_usage() {
@@ -48,7 +49,7 @@ print_usage() {
 }
 
 set_lcd_mode() {
-	liquidctl --match NZXT set lcd screen "$1" "$2"
+	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen "$1" "$2"
 }
 
 get_sensor_data() {
@@ -131,10 +132,10 @@ if ! (return 2>/dev/null); then
 	done
 
 	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] &&
-		liquidctl --match NZXT set lcd screen brightness "${BRIGHTNESS}"
+		liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen brightness "${BRIGHTNESS}"
 
 	[[ ${#SPEED[@]} -gt 0 ]] &&
-		(IFS=,; liquidctl --match NZXT set pump speed ${SPEED[*]})
+		(IFS=,; liquidctl --match "${LIQUID_COOLER_NAME}" set pump speed ${SPEED[*]})
 
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
