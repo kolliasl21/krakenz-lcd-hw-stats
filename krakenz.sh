@@ -52,6 +52,15 @@ set_lcd_mode() {
 	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen "$1" "$2"
 }
 
+set_lcd_brightness() {
+	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen brightness "${BRIGHTNESS}"
+}
+
+set_pump_speed() (
+	IFS=,
+	liquidctl --match "${LIQUID_COOLER_NAME}" set pump speed ${SPEED[*]}
+)
+
 get_sensor_data() {
 	sensors -j | jq "(
 		.\"amdgpu-pci-2800\".\"edge\".\"temp1_input\",
@@ -131,11 +140,9 @@ if ! (return 2>/dev/null); then
 		esac
 	done
 
-	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] &&
-		liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen brightness "${BRIGHTNESS}"
+	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] && set_lcd_brightness
 
-	[[ ${#SPEED[@]} -gt 0 ]] &&
-		(IFS=,; liquidctl --match "${LIQUID_COOLER_NAME}" set pump speed ${SPEED[*]})
+	[[ ${#SPEED[@]} -gt 0 ]] && set_pump_speed
 
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
