@@ -2,7 +2,7 @@
 
 - Display sensors
 - Display digital clock
-- Other basic functionality
+- Other basic functionality (set pump speed, set LCD brightness, etc)
 
 ## Dependencies
 
