@@ -52,11 +52,11 @@ set_lcd_mode() {
 	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen "$1" "$2"
 }
 
-set_lcd_brightness() {
+_set_lcd_brightness() {
 	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen brightness "${BRIGHTNESS}"
 }
 
-set_pump_speed() (
+_set_pump_speed() (
 	IFS=,
 	liquidctl --match "${LIQUID_COOLER_NAME}" set pump speed ${SPEED[*]}
 )
@@ -140,9 +140,9 @@ if ! (return 2>/dev/null); then
 		esac
 	done
 
-	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] && set_lcd_brightness
+	[[ ${BRIGHTNESS} -ge 0 ]] && [[ ${BRIGHTNESS} -le 100 ]] && _set_lcd_brightness
 
-	[[ ${#SPEED[@]} -gt 0 ]] && set_pump_speed
+	[[ ${#SPEED[@]} -gt 0 ]] && _set_pump_speed
 
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
