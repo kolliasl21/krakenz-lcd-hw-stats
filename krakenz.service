@@ -1,0 +1,10 @@
+[Unit]
+Description=NZXT Z63 startup service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/krakenz -b 50 -s 25,40,30,60,35,80,40,100 -t
+
+[Install]
+WantedBy=default.target
+
