@@ -43,7 +43,7 @@ print_usage() {
 		   static : 0-100% (single value for static speed)
 		-c change .gif
 		-t clock mode
-		-m monitor mode
+		-m monitor mode (add more "-m" flags to switch display)
 		-d load default profile
 		-p load user profile
 	EOF
@@ -90,7 +90,15 @@ update_clock_image() {
 
 _update_sensors_image() {
 	declare -a data
+	declare -A keyval_array
+	local i=0
 	readarray -t data < <(get_sensor_data)
+
+	for item in gpu liq cpu gpum gpuh pow spd; do
+		keyval_array[$item]=${data[i]}
+		((i++))
+	done
+
 	magick  -size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
@@ -98,51 +106,45 @@ _update_sensors_image() {
 		-pointsize 80 \
 		-annotate +0-100 "$(date +%H:%M)" \
 		-pointsize 30 \
-		-annotate +0+135 "${data[6]}rpm" \
+		-annotate +0+135 "${keyval_array[spd]}rpm" \
 		-tile gradient:red-yellow \
 		-gravity center \
 		-pointsize 30 \
 		-annotate -60-45 "$1" \
 		-pointsize 30 \
-		-annotate +60-45 "$2" \
+		-annotate +60-45 "$3" \
 		-pointsize 30 \
-		-annotate -60+45 "$3" \
+		-annotate -60+45 "$5" \
 		-pointsize 30 \
-		-annotate +60+45 "$4" \
+		-annotate +60+45 "$7" \
 		-tile gradient:red-red \
 		-gravity center \
 		-pointsize 40 \
-		-annotate -60-0  "${data[$5]}$CELSIUS" \
+		-annotate -60-0  "${keyval_array[$2]}$CELSIUS" \
 		-pointsize 40 \
-		-annotate +60-0  "${data[$6]}$CELSIUS" \
+		-annotate +60-0  "${keyval_array[$4]}$CELSIUS" \
 		-pointsize 40 \
-		-annotate -60+90 "${data[$7]}$8" \
+		-annotate -60+90 "${keyval_array[$6]}$9" \
 		-pointsize 40 \
-		-annotate +60+90 "${data[1]}$CELSIUS" "${IMG_PATH}"
+		-annotate +60+90 "${keyval_array[$8]}$CELSIUS" "${IMG_PATH}"
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
 update_sensors_image() {
 	_update_sensors_image \
-		"GPU" \
-		"CPU" \
-		"Power" \
-		"Coolant" \
-		0 \
-		2 \
-		5 \
+		"GPU" "gpu" \
+		"CPU" "cpu" \
+		"Power" "pow" \
+		"Coolant" "liq" \
 		"W"
 }
 
 update_sensors_image_alt() {
 	_update_sensors_image \
-		"GPUMem" \
-		"GPUHot" \
-		"CPU" \
-		"Coolant" \
-		3 \
-		4 \
-		2 \
+		"GPUMem" "gpum" \
+		"GPUHot" "gpuh" \
+		"CPU" "cpu" \
+		"Coolant" "liq" \
 		"$CELSIUS"
 }
 
