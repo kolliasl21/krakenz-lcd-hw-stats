@@ -11,6 +11,7 @@ IMG_RES="320x320"
 Z53_NAME=
 CORSAIR_PSU_NAME=
 LIQUID_COOLER_NAME="NZXT"
+CELSIUS=$'\xe2\x84\x83'
 
 init() {
 	local sensor_data
@@ -27,8 +28,8 @@ init
 
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
-	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
-		Z53_NAME CORSAIR_PSU_NAME IMG_RES LIQUID_COOLER_NAME
+	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON Z53_NAME \
+		CORSAIR_PSU_NAME IMG_RES LIQUID_COOLER_NAME CELSIUS
 }
 
 print_usage() {
@@ -68,7 +69,8 @@ get_sensor_data() {
 		.\"k10temp-pci-00c3\".\"Tctl\".\"temp1_input\", 
 		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
 		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
-		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\"
+		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\",
+		.\"${Z53_NAME}\".\"Pump speed\".\"fan1_input\"
 	)*10|round/10"
 }
 
@@ -86,28 +88,62 @@ update_clock_image() {
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
-update_sensors_image() {
+_update_sensors_image() {
 	declare -a data
 	readarray -t data < <(get_sensor_data)
-	magick 	-size "${IMG_RES}" gradient:black-black \
+	magick  -size "${IMG_RES}" gradient:black-black \
 		-font "${FONT}" \
 		-tile gradient:blue-magenta \
 		-gravity center \
 		-pointsize 80 \
-		-annotate +0-100     "$(date +%H:%M)" \
-		-pointsize 50 \
-		-annotate +0-45      "GPU:${data[0]}" \
-		-pointsize 50 \
-		-annotate +0+0   "Coolant:${data[1]}" \
-		-pointsize 50 \
-		-annotate +0+45      "CPU:${data[2]}" \
+		-annotate +0-100 "$(date +%H:%M)" \
 		-pointsize 30 \
-		-annotate +0+80   "GPUMem:${data[3]}" \
+		-annotate +0+135 "${data[6]}rpm" \
+		-tile gradient:red-yellow \
+		-gravity center \
 		-pointsize 30 \
-		-annotate +0+110  "GPUHot:${data[4]}" \
-		-pointsize 20 \
-		-annotate +0+135 "PSU12VR:${data[5]}W" "${IMG_PATH}"
+		-annotate -60-45 "$1" \
+		-pointsize 30 \
+		-annotate +60-45 "$2" \
+		-pointsize 30 \
+		-annotate -60+45 "$3" \
+		-pointsize 30 \
+		-annotate +60+45 "$4" \
+		-tile gradient:red-red \
+		-gravity center \
+		-pointsize 40 \
+		-annotate -60-0  "${data[$5]}$CELSIUS" \
+		-pointsize 40 \
+		-annotate +60-0  "${data[$6]}$CELSIUS" \
+		-pointsize 40 \
+		-annotate -60+90 "${data[$7]}$8" \
+		-pointsize 40 \
+		-annotate +60+90 "${data[1]}$CELSIUS" "${IMG_PATH}"
 	set_lcd_mode "static" "${IMG_PATH}"
+}
+
+update_sensors_image() {
+	_update_sensors_image \
+		"GPU" \
+		"CPU" \
+		"Power" \
+		"Coolant" \
+		0 \
+		2 \
+		5 \
+		"W"
+}
+
+update_sensors_image_alt() {
+	_update_sensors_image \
+		"GPUMem" \
+		"GPUHot" \
+		"CPU" \
+		"Coolant" \
+		3 \
+		4 \
+		2 \
+		"$CELSIUS"
 }
 
 refresh_display() {
@@ -133,9 +169,11 @@ if ! (return 2>/dev/null); then
 			s) SPEED+=("${OPTARG}") ;;
 			c) GIF="${OPTARG}" ;; 
 			t) CLOCK=1 ;; 
-			m) MON=1 ;;
-			d) BRIGHTNESS=50 SPEED=(20 40 23 50 30 70); set_lcd_mode "liquid"; break ;;
-			p) BRIGHTNESS=0  SPEED=(35); set_lcd_mode "gif" "${GIF}"; break ;;
+			m) ((MON++)) ;;
+			d) BRIGHTNESS=50 SPEED=(25 40 30 60 35 80 40 100)
+				set_lcd_mode "liquid"; break ;;
+			p) BRIGHTNESS=50  SPEED=(50)
+				set_lcd_mode "gif" "${GIF}"; break ;;
 			*) print_usage; exit 0 ;;
 		esac
 	done
@@ -146,5 +184,7 @@ if ! (return 2>/dev/null); then
 
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
-	[[ -n $MON ]] && refresh_display "update_sensors_image" ".5"
+	[[ -n $MON ]] && ((MON < 2)) && refresh_display "update_sensors_image" ".5"
+
+	[[ -n $MON ]] && refresh_display "update_sensors_image_alt" ".5"
 fi
