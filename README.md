@@ -38,10 +38,11 @@ WantedBy=default.target
 
 Enable service:
 
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable krakenz.service --now
 ```
 
-<img width="320" height="320" alt="time" src="https://github.com/user-attachments/assets/80ff39f6-36eb-4c7c-a12a-54b8626a0483" />
+<img width="320" height="320" alt="image pLRk" src="https://github.com/user-attachments/assets/78e5f3e3-1cf8-45be-bf2c-0153b2563816" />
 <img width="320" height="320" alt="time" src="https://github.com/user-attachments/assets/0fff53ed-3e0b-45a8-b23d-ed1fcd8fe28e" />
