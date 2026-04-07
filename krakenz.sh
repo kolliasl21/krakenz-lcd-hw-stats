@@ -12,16 +12,20 @@ Z53_NAME=
 CORSAIR_PSU_NAME=
 LIQUID_COOLER_NAME="NZXT"
 CELSIUS=$'\xe2\x84\x83'
+DDR=()
 
 init() {
 	local sensor_data
 	sensor_data=$(sensors -j)
 	Z53_NAME=$(
-		jq -r '.|keys|map(select(.|startswith("z53-hid-3-")))|first' \
-		<(echo "$sensor_data"))
+		jq -r '.|keys|map(select(startswith("z53-hid-3-")))|first' \
+			<(echo "$sensor_data"))
 	CORSAIR_PSU_NAME=$(
-		jq -r '.|keys|map(select(.|startswith("corsairpsu-hid-3-")))|first' \
-		<(echo "$sensor_data"))
+		jq -r '.|keys|map(select(startswith("corsairpsu-hid-3-")))|first' \
+			<(echo "$sensor_data"))
+	readarray -t DDR < <(
+		jq -r '.|keys|map(select(startswith("jc42-i2c-9-")))' \
+			<(echo "$sensor_data") | jq -r '.[]')
 }
 
 init
@@ -29,7 +33,7 @@ init
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
 	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON Z53_NAME \
-		CORSAIR_PSU_NAME IMG_RES LIQUID_COOLER_NAME CELSIUS
+		CORSAIR_PSU_NAME IMG_RES LIQUID_COOLER_NAME CELSIUS DDR
 }
 
 print_usage() {
@@ -70,7 +74,11 @@ get_sensor_data() {
 		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
 		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
 		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\",
-		.\"${Z53_NAME}\".\"Pump speed\".\"fan1_input\"
+		.\"${Z53_NAME}\".\"Pump speed\".\"fan1_input\",
+		.\"${DDR[0]}\".\"temp1\".\"temp1_input\",
+		.\"${DDR[1]}\".\"temp1\".\"temp1_input\",
+		.\"${DDR[2]}\".\"temp1\".\"temp1_input\",
+		.\"${DDR[3]}\".\"temp1\".\"temp1_input\"
 	)*10|round/10"
 }
 
@@ -94,7 +102,7 @@ _update_sensors_image() {
 	local i=0
 	readarray -t data < <(get_sensor_data)
 
-	for item in gpu liq cpu gpum gpuh pow spd; do
+	for item in gpu liq cpu gpum gpuh pow spd dim{0..3}; do
 		keyval_array[$item]=${data[i]}
 		((i++))
 	done
@@ -112,40 +120,46 @@ _update_sensors_image() {
 		-pointsize 30 \
 		-annotate -60-45 "$1" \
 		-pointsize 30 \
-		-annotate +60-45 "$3" \
+		-annotate +60-45 "$4" \
 		-pointsize 30 \
-		-annotate -60+45 "$5" \
+		-annotate -60+45 "$7" \
 		-pointsize 30 \
-		-annotate +60+45 "$7" \
+		-annotate +60+45 "${10}" \
 		-tile gradient:red-red \
 		-gravity center \
 		-pointsize 40 \
-		-annotate -60-0  "${keyval_array[$2]}$CELSIUS" \
+		-annotate -60-0  "${keyval_array[$2]}$3" \
 		-pointsize 40 \
-		-annotate +60-0  "${keyval_array[$4]}$CELSIUS" \
+		-annotate +60-0  "${keyval_array[$5]}$6" \
 		-pointsize 40 \
-		-annotate -60+90 "${keyval_array[$6]}$9" \
+		-annotate -60+90 "${keyval_array[$8]}$9" \
 		-pointsize 40 \
-		-annotate +60+90 "${keyval_array[$8]}$CELSIUS" "${IMG_PATH}"
+		-annotate +60+90 "${keyval_array[${11}]}${12}" "${IMG_PATH}"
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
 update_sensors_image() {
 	_update_sensors_image \
-		"GPU" "gpu" \
-		"CPU" "cpu" \
-		"Power" "pow" \
-		"Coolant" "liq" \
-		"W"
+		"GPU"     "gpu" "$CELSIUS" \
+		"CPU"     "cpu" "$CELSIUS" \
+		"Power"   "pow" "W" \
+		"Coolant" "liq" "$CELSIUS"
 }
 
 update_sensors_image_alt() {
 	_update_sensors_image \
-		"GPUMem" "gpum" \
-		"GPUHot" "gpuh" \
-		"CPU" "cpu" \
-		"Coolant" "liq" \
-		"$CELSIUS"
+		"GPUMem"  "gpum" "$CELSIUS" \
+		"GPUHot"  "gpuh" "$CELSIUS" \
+		"CPU"     "cpu"  "$CELSIUS" \
+		"Coolant" "liq"  "$CELSIUS"
+}
+
+update_sensors_image_ddr() {
+	_update_sensors_image \
+		"DIMM0"  "dim0" "$CELSIUS" \
+		"DIMM1"  "dim1" "$CELSIUS" \
+		"DIMM2"  "dim2" "$CELSIUS" \
+		"DIMM3"  "dim3" "$CELSIUS"
 }
 
 refresh_display() {
@@ -187,6 +201,8 @@ if ! (return 2>/dev/null); then
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
 	[[ -n $MON ]] && ((MON < 2)) && refresh_display "update_sensors_image" ".5"
+
+	[[ -n $MON ]] && ((MON > 2)) && refresh_display "update_sensors_image_ddr" ".5"
 
 	[[ -n $MON ]] && refresh_display "update_sensors_image_alt" ".5"
 fi
