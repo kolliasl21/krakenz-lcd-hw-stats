@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Change FONT, GIF, IMG_RES.
+# IMG_RES for newer NZXT Kraken liquid coolers is 640x640.
+# Change LIQUID_COOLER_NAME with other brand if supported by liquidctl.
+
 SPEED=()
 BRIGHTNESS=-1
 GIF="/path/to/file.gif"
@@ -17,12 +21,17 @@ DDR=()
 init() {
 	local sensor_data
 	sensor_data=$(sensors -j)
+
+	# Get devices that don't have fixed names at startup, usually USB devices.
+	# Match the first part of the string to get the full device name.
 	Z53_NAME=$(
 		jq -r '.|keys|map(select(startswith("z53-hid-3-")))|first' \
 			<(echo "$sensor_data"))
 	CORSAIR_PSU_NAME=$(
 		jq -r '.|keys|map(select(startswith("corsairpsu-hid-3-")))|first' \
 			<(echo "$sensor_data"))
+
+	# Get a group of devices and store their names in an array.
 	readarray -t DDR < <(
 		jq -r '.|keys|map(select(startswith("jc42-i2c-9-")))' \
 			<(echo "$sensor_data") | jq -r '.[]')
@@ -67,6 +76,11 @@ _set_pump_speed() (
 )
 
 get_sensor_data() {
+	# Replace with your own sensors. Don't copy these.
+	# If you have issues with devices changing names, add
+	# them to init() like Z53_NAME and CORSAIR_PSU_NAME in my case.
+	# Ignore DDR temperature sensors, remove them from init().
+	# Start with a few simple sensors, add more later.
 	sensors -j | jq "(
 		.\"amdgpu-pci-2800\".\"edge\".\"temp1_input\",
 		.\"${Z53_NAME}\".\"Coolant temp\".\"temp1_input\",
@@ -104,6 +118,7 @@ _update_sensors_image() {
 	local i=0
 	readarray -t data < <(get_sensor_data)
 
+	# Create an associative array to pair keys with sensor values.
 	for item in gpu liq cpu gpum gpuh sclk ppt pow spd dim{0..3}; do
 		keyval_array[$item]=${data[i]}
 		((i++))
@@ -140,6 +155,7 @@ _update_sensors_image() {
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
+# Create display modes bellow.
 update_sensors_image() {
 	_update_sensors_image \
 		"GPU"     "gpu" "$CELSIUS" \
@@ -173,7 +189,7 @@ update_sensors_image_gpu() {
 }
 
 cycle_display() {
-
+	# Cycle through display modes.
 	_loop() {
 		local i=0
 		for i in {0..9}; do
