@@ -73,6 +73,8 @@ get_sensor_data() {
 		.\"k10temp-pci-00c3\".\"Tctl\".\"temp1_input\", 
 		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
 		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
+		.\"amdgpu-pci-2800\".\"sclk\".\"freq1_input\"/1000000,
+		.\"amdgpu-pci-2800\".\"PPT\".\"power1_average\",
 		.\"${CORSAIR_PSU_NAME}\".\"power +12v\".\"power2_input\",
 		.\"${Z53_NAME}\".\"Pump speed\".\"fan1_input\",
 		.\"${DDR[0]}\".\"temp1\".\"temp1_input\",
@@ -102,7 +104,7 @@ _update_sensors_image() {
 	local i=0
 	readarray -t data < <(get_sensor_data)
 
-	for item in gpu liq cpu gpum gpuh pow spd dim{0..3}; do
+	for item in gpu liq cpu gpum gpuh sclk ppt pow spd dim{0..3}; do
 		keyval_array[$item]=${data[i]}
 		((i++))
 	done
@@ -162,6 +164,31 @@ update_sensors_image_ddr() {
 		"DIMM3"  "dim3" "$CELSIUS"
 }
 
+update_sensors_image_gpu() {
+	_update_sensors_image \
+		"GPU"      "sclk" "MHz" \
+		"Edge"     "gpu"  "$CELSIUS" \
+		"PPT"      "ppt"  "W" \
+		"Junction" "gpuh" "$CELSIUS"
+}
+
+cycle_display() {
+
+	_loop() {
+		local i=0
+		for i in {0..9}; do
+			"$1"
+			sleep "$2"
+		done
+	}
+
+	while true; do
+		for item in update_sensors_image{,_alt,_ddr,_gpu}; do
+			_loop "$item" "$1"
+		done
+	done
+}
+
 refresh_display() {
 	while true; do
 		"$1"
@@ -200,9 +227,13 @@ if ! (return 2>/dev/null); then
 
 	[[ -n $CLOCK ]] && refresh_display "update_clock_image" "30"
 
-	[[ -n $MON ]] && ((MON < 2)) && refresh_display "update_sensors_image" ".5"
+	[[ -z $MON ]] && exit 0
 
-	[[ -n $MON ]] && ((MON > 2)) && refresh_display "update_sensors_image_ddr" ".5"
-
-	[[ -n $MON ]] && refresh_display "update_sensors_image_alt" ".5"
+	case $MON in
+		1) refresh_display "update_sensors_image"     ".5" ;;
+		2) refresh_display "update_sensors_image_alt" ".5" ;;
+		3) refresh_display "update_sensors_image_ddr" ".5" ;;
+		4) refresh_display "update_sensors_image_gpu" ".5" ;;
+		*) cycle_display ".5" ;;
+	esac
 fi
