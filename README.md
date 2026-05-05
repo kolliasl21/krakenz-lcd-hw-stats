@@ -14,11 +14,11 @@
 
 ## Service
 
-Copy krakenz.sh to /usr/bin/krakenz and make it executable:
+Copy krakenz.sh to /usr/local/bin/krakenz and make it executable:
 
 ```bash
-sudo cp krakenz.sh /usr/bin/krakenz
-sudo chmod +x /usr/bin/krakenz
+sudo cp krakenz.sh /usr/local/bin/krakenz
+sudo chmod +x /usr/local/bin/krakenz
 ```
 
 Create `/etc/systemd/system/krakenz.service`:
@@ -29,7 +29,7 @@ Description=NZXT Z63 startup service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/krakenz -b 50 -s 25,40,30,60,35,80,40,100 -t
+ExecStart=/usr/local/bin/krakenz -b 50 -s 25,40,30,60,35,80,40,100 -t
 
 [Install]
 WantedBy=default.target
