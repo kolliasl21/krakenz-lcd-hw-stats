@@ -44,5 +44,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable krakenz.service --now
 ```
 
-<img width="320" height="320" alt="image pLRk" src="https://github.com/user-attachments/assets/78e5f3e3-1cf8-45be-bf2c-0153b2563816" />
-<img width="320" height="320" alt="time" src="https://github.com/user-attachments/assets/0fff53ed-3e0b-45a8-b23d-ed1fcd8fe28e" />
+<img width="320" height="320" alt="image sBnn" src="https://github.com/user-attachments/assets/9ef6849d-2676-495c-9af3-6f75ad26886c" />
+<img width="320" height="320" alt="image D7OQ" src="https://github.com/user-attachments/assets/cefee771-d8d6-4653-9ed3-4b3b93ac164f" />
