@@ -7,7 +7,7 @@
 BRIGHTNESS=-1
 GIF="/path/to/file.gif"
 IMG_PATH="$(mktemp -u /tmp/image.XXXX.png)"
-FONT="/usr/share/fonts/noto/NotoSans-ThinItalic.ttf"
+FONT="/usr/share/fonts/noto/NotoSans-MediumItalic.ttf"
 CLOCK=
 MON=
 IMG_RES="320x320"
@@ -74,22 +74,30 @@ get_sensor_data() {
 	# Replace with your own sensors. Don't copy these.
 	# If you have issues with devices changing names, add them to init().
 	# Start with a few simple sensors, add more later.
-	jq "(
-		.\"k10temp-pci-00c3\".\"Tctl\".\"temp1_input\", 
-		.\"amdgpu-pci-2800\".\"edge\".\"temp1_input\",
-		.\"amdgpu-pci-2800\".\"mem\".\"temp3_input\", 
-		.\"amdgpu-pci-2800\".\"junction\".\"temp2_input\",
-		.\"amdgpu-pci-2800\".\"sclk\".\"freq1_input\"/1000000,
-		.\"amdgpu-pci-2800\".\"PPT\".\"power1_average\",
-		.\"amdgpu-pci-2800\".\"fan1\".\"fan1_input\",
-		.\"${DEVICES[psu]}\".\"power +12v\".\"power2_input\",
-		.\"${DEVICES[z53]}\".\"Coolant temp\".\"temp1_input\",
-		.\"${DEVICES[z53]}\".\"Pump speed\".\"fan1_input\",
-		.\"${DEVICES[dim0]}\".\"temp1\".\"temp1_input\",
-		.\"${DEVICES[dim1]}\".\"temp1\".\"temp1_input\",
-		.\"${DEVICES[dim2]}\".\"temp1\".\"temp1_input\",
-		.\"${DEVICES[dim3]}\".\"temp1\".\"temp1_input\"
-		)*10|round/10" <(sensors -j)
+	# Pass the DEVICES array values into jq using --arg.
+	jq \
+		--arg psu  "${DEVICES[psu]}" \
+		--arg z53  "${DEVICES[z53]}" \
+		--arg dim0 "${DEVICES[dim0]}" \
+		--arg dim1 "${DEVICES[dim1]}" \
+		--arg dim2 "${DEVICES[dim2]}" \
+		--arg dim3 "${DEVICES[dim3]}" \
+		'(
+		."k10temp-pci-00c3"."Tctl"."temp1_input",
+		."amdgpu-pci-2800"."edge"."temp1_input",
+		."amdgpu-pci-2800"."mem"."temp3_input",
+		."amdgpu-pci-2800"."junction"."temp2_input",
+		."amdgpu-pci-2800"."sclk"."freq1_input"/1000000,
+		."amdgpu-pci-2800"."PPT"."power1_average",
+		."amdgpu-pci-2800"."fan1"."fan1_input",
+		.[$psu]."power +12v"."power2_input",
+		.[$z53]."Coolant temp"."temp1_input",
+		.[$z53]."Pump speed"."fan1_input",
+		.[$dim0]."temp1"."temp1_input",
+		.[$dim1]."temp1"."temp1_input",
+		.[$dim2]."temp1"."temp1_input",
+		.[$dim3]."temp1"."temp1_input"
+		)*10|round/10' <(sensors -j)
 }
 
 update_clock_image() {
