@@ -14,6 +14,7 @@ IMG_RES="320x320"
 LIQUID_COOLER_NAME="NZXT"
 ORIENTATION=-1
 CELSIUS=$'\xe2\x84\x83'
+DEG=$'\xc2\xb0'
 declare -a SPEED
 declare -A DEVICES=([gpu]="amdgpu-pci-2800" [cpu]="k10temp-pci-00c3")
 JQ_READ=
@@ -89,6 +90,7 @@ print_usage() {
 		-d load default profile
 		-p load user profile
 		-h print usage
+		-o set display orientation (0$DEG, 90$DEG, 180$DEG, 270$DEG)
 	EOF
 }
 
