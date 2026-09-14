@@ -12,7 +12,7 @@ CLOCK=
 MON=
 IMG_RES="320x320"
 LIQUID_COOLER_NAME="NZXT"
-ORIENTATION=0
+ORIENTATION=-1
 CELSIUS=$'\xe2\x84\x83'
 declare -a SPEED
 declare -A DEVICES=([gpu]="amdgpu-pci-2800" [cpu]="k10temp-pci-00c3")
