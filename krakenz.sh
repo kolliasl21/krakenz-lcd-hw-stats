@@ -12,6 +12,7 @@ CLOCK=
 MON=
 IMG_RES="320x320"
 LIQUID_COOLER_NAME="NZXT"
+ORIENTATION=0
 CELSIUS=$'\xe2\x84\x83'
 declare -a SPEED
 declare -A DEVICES=([gpu]="amdgpu-pci-2800" [cpu]="k10temp-pci-00c3")
@@ -89,6 +90,10 @@ print_usage() {
 		-p load user profile
 		-h print usage
 	EOF
+}
+
+set_lcd_orientation() {
+	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen orientation "$1"
 }
 
 set_lcd_mode() {
@@ -285,7 +290,7 @@ _main() {
 	liquidctl initialize all &>/dev/null
 
 	local OPTARG OPTIND flag
-	while getopts "b:lgs:c:tmdph" flag; do
+	while getopts "b:lgs:c:tmdpho:" flag; do
 		case "${flag}" in
 			b) BRIGHTNESS="${OPTARG}" ;;
 			l) set_lcd_mode "liquid" ;;
@@ -299,10 +304,13 @@ _main() {
 			p) BRIGHTNESS=50 SPEED=(50)
 				set_lcd_mode "gif" "${GIF}"; break ;;
 			h) print_usage; return 0 ;;
+			o) ORIENTATION="${OPTARG}" ;;
 			*) echo "Wrong input! Available flags:" >&2;
 				print_usage >&2; return 2 ;;
 		esac
 	done
+
+	[[ ${ORIENTATION} -ge 0 ]] && set_lcd_orientation "$ORIENTATION"
 
 	[[ ${BRIGHTNESS} -ge 0 && ${BRIGHTNESS} -le 100 ]] && _set_lcd_brightness
 
