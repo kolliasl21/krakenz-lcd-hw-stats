@@ -35,7 +35,7 @@ init() {
 		select(startswith("jc42-i2c-9-"))
 		)|sort .[]' <(sensors -j))
 
-	# Strip sensor names from right to left up to the last dash "-" and
+	# Strip sensor names from right to left up to the last hyphen "-" and
 	# store them in a associative array paired with the sensor name as key.
 	for item in "${data[@]}"; do
 		items[$item]=${item%%-*}
@@ -69,8 +69,15 @@ init() {
 
 cleanup() {
 	[[ -f "${IMG_PATH}" ]] && rm "${IMG_PATH}"
+
 	enable -n sleep
-	[[ -n $JQ_PID ]] && kill -15 "$JQ_PID"
+
+	if [[ -n $JQ_PID ]]; then
+		exec {JQ_READ}>&-
+		exec {JQ_WRITE}>&-
+		kill -15 "$JQ_PID"
+	fi
+
 	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
 		IMG_RES LIQUID_COOLER_NAME CELSIUS DEVICES \
 		JQ_READ JQ_WRITE
@@ -252,6 +259,14 @@ update_sensors_image_ddr() {
 update_sensors_image_gpu() {
 	_update_sensors_image \
 		"GPU MHz"  "gpuc" "" \
+		"Edge"     "gpue" "$CELSIUS" \
+		"PPT"      "gpup" "W" \
+		"Junction" "gpuj" "$CELSIUS"
+}
+
+update_sensors_image_gpu_alt() {
+	_update_sensors_image \
+		"GPU Fan"  "gpuf" "" \
 		"Edge"     "gpue" "$CELSIUS" \
 		"PPT"      "gpup" "W" \
 		"Junction" "gpuj" "$CELSIUS"
