@@ -39,8 +39,8 @@ init() {
 	# store them in a associative array paired with the sensor name as key.
 	for item in "${data[@]}"; do
 		items[$item]=${item%%-*}
-		 ((item_count[${item%%-*}]++))
-		 ((item_count_copy[${item%%-*}]++))
+		((item_count[${item%%-*}]++))
+		((item_count_copy[${item%%-*}]++))
 	done
 
 	# Keep duplicate values by appending a suffix.
