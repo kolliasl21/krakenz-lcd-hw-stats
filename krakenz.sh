@@ -253,8 +253,8 @@ _update_sensors_image_simple() {
 		-annotate -0-45 "$1" \
 		-tile gradient:red-red \
 		-gravity center \
-		-pointsize 110 \
-		-annotate -0+35  "${keyval_array[$2]}$3" "${IMG_PATH}"
+		-pointsize 115 \
+		-annotate -0+20  "${keyval_array[$2]}$3" "${IMG_PATH}"
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
