@@ -3,6 +3,7 @@
 # Change FONT, GIF, IMG_RES.
 # IMG_RES for newer NZXT Kraken liquid coolers is 640x640.
 # Change LIQUID_COOLER_NAME with other brand if supported by liquidctl.
+# NSENSORS = Number of sensors.
 
 BRIGHTNESS=-1
 GIF="/path/to/file.gif"
@@ -17,6 +18,7 @@ CELSIUS=$'\xe2\x84\x83'
 DEG=$'\xc2\xb0'
 declare -a SPEED
 declare -A DEVICES=([gpu]="amdgpu-pci-2800" [cpu]="k10temp-pci-00c3")
+NSENSORS=14
 JQ_READ=
 JQ_WRITE=
 
@@ -26,6 +28,10 @@ init() {
 	local item count
 	declare -a data
 	declare -A item_count item_count_copy items
+
+	trap cleanup EXIT
+
+	liquidctl initialize all &>/dev/null
 
 	# Get devices that don't have fixed names at startup, usually USB devices.
 	# Match the first part of the string to get the full device name.
@@ -80,7 +86,7 @@ cleanup() {
 
 	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
 		IMG_RES LIQUID_COOLER_NAME CELSIUS DEVICES \
-		JQ_READ JQ_WRITE
+		NSENSORS JQ_READ JQ_WRITE
 }
 
 print_usage() {
@@ -128,8 +134,7 @@ _init_coproc_jq() {
 		args_list+=("--arg" "$key" "${DEVICES[$key]}")
 	done
 
-	# Replace with your own sensors. Don't copy these.
-	# Start with a few simple sensors, add more later.
+	# Add sensors below.
 	coproc JQ {
 		jq --unbuffered "${args_list[@]}" \
 		'(
@@ -158,7 +163,7 @@ get_sensor_data() {
 	sensors -j >&"$JQ_WRITE"
 	local i line
 	# Read sensor data from file descriptor.
-	for ((i=0; i<14; i++)); do
+	for ((i=0; i<NSENSORS; i++)); do
 		read -r -u "$JQ_READ" line
 		echo "$line"
 	done
@@ -231,6 +236,46 @@ _update_sensors_image() {
 	set_lcd_mode "static" "${IMG_PATH}"
 }
 
+_update_sensors_image_simple() {
+	declare -a data sensor_order=(cput gpu{e,m,j,c,p,f} powr liqt pump dim{0..3})
+	declare -A keyval_array
+	local i=0 item strtime
+	readarray -t data < <(get_sensor_data)
+
+	# Create an associative array to pair keys with sensor values.
+	# Format sensor data with printf and store the formatted values
+	# into the array.
+	for item in "${sensor_order[@]}"; do
+		printf -v keyval_array["$item"] '%s' "${data[i]}"
+		((i++))
+	done
+
+	# Format these sensors to one decimal place.
+	for item in cput liqt dim{0..3}; do
+		printf -v keyval_array["$item"] '%.1f' "${keyval_array[$item]}"
+	done
+
+	printf -v strtime '%(%H:%M)T'
+
+	magick  -size "${IMG_RES}" gradient:black-black \
+		-font "${FONT}" \
+		-tile gradient:blue-magenta \
+		-gravity center \
+		-pointsize 80 \
+		-annotate +0-100 "$strtime" \
+		-pointsize 30 \
+		-annotate +0+135 "${keyval_array[pump]}rpm" \
+		-tile gradient:red-yellow \
+		-gravity center \
+		-pointsize 30 \
+		-annotate -0-45 "$1" \
+		-tile gradient:red-red \
+		-gravity center \
+		-pointsize 110 \
+		-annotate -0+35  "${keyval_array[$2]}$3" "${IMG_PATH}"
+	set_lcd_mode "static" "${IMG_PATH}"
+}
+
 # Create display modes bellow.
 update_sensors_image() {
 	_update_sensors_image \
@@ -272,6 +317,11 @@ update_sensors_image_gpu_alt() {
 		"Junction" "gpuj" "$CELSIUS"
 }
 
+update_sensors_image_simple() {
+	_update_sensors_image_simple \
+		"Liquid"  "liqt" "$DEG"
+}
+
 cycle_display() {
 	# Cycle through display modes.
 	local item
@@ -300,11 +350,7 @@ refresh_display() {
 
 _main() {
 
-	trap cleanup EXIT
-
 	[[ -z $GIF ]] && echo "GIF not set!" && return 1
-
-	liquidctl initialize all &>/dev/null
 
 	local OPTARG OPTIND flag
 	while getopts "b:lgs:c:tmdpho:" flag; do
