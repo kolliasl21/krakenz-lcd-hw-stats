@@ -33,6 +33,12 @@ init() {
 
 	liquidctl initialize all &>/dev/null
 
+	liquidctl -m "${LIQUID_COOLER_NAME}" list | grep -q "${LIQUID_COOLER_NAME}" || \
+		{
+			echo "Device ${LIQUID_COOLER_NAME} not found. Quitting" >&2
+			return 1
+		}
+
 	# Get devices that don't have fixed names at startup, usually USB devices.
 	# Match the first part of the string to get the full device name.
 	readarray -t data < <(jq -r 'keys|map(
@@ -300,7 +306,7 @@ refresh_display() {
 
 _main() {
 
-	[[ -z $GIF ]] && echo "GIF not set!" && return 1
+	[[ -z $GIF ]] && echo "GIF not set!" >&2 && return 1
 
 	local OPTARG OPTIND flag
 	while getopts "b:lgs:c:tmdpho:" flag; do
