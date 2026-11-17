@@ -2,7 +2,7 @@
 
 # Change FONT, GIF, IMG_RES.
 # IMG_RES for newer NZXT Kraken liquid coolers is 640x640.
-# Change LIQUID_COOLER_NAME with other brand if supported by liquidctl.
+# Change LC_NAME with other brand if supported by liquidctl.
 # NSENSORS = Number of sensors.
 
 BRIGHTNESS=-1
@@ -12,7 +12,7 @@ FONT="/usr/share/fonts/noto/NotoSans-MediumItalic.ttf"
 CLOCK=
 MON=
 IMG_RES="320x320"
-LIQUID_COOLER_NAME="NZXT"
+LC_NAME="NZXT"
 ORIENTATION=-1
 CELSIUS=$'\xe2\x84\x83'
 DEG=$'\xc2\xb0'
@@ -33,9 +33,9 @@ init() {
 
 	liquidctl initialize all &>/dev/null
 
-	liquidctl -m "${LIQUID_COOLER_NAME}" list | grep -q "${LIQUID_COOLER_NAME}" || \
+	liquidctl -m "${LC_NAME}" list | grep -q "${LC_NAME}" || \
 		{
-			echo "Device ${LIQUID_COOLER_NAME} not found. Quitting" >&2
+			echo "Device ${LC_NAME} not found. Quitting" >&2
 			return 1
 		}
 
@@ -91,7 +91,7 @@ cleanup() {
 	fi
 
 	unset FONT GIF SPEED BRIGHTNESS IMG_PATH CLOCK MON \
-		IMG_RES LIQUID_COOLER_NAME CELSIUS DEVICES \
+		IMG_RES LC_NAME CELSIUS DEVICES \
 		NSENSORS JQ_READ JQ_WRITE
 }
 
@@ -114,20 +114,20 @@ print_usage() {
 }
 
 set_lcd_orientation() {
-	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen orientation "$1"
+	liquidctl --match "${LC_NAME}" set lcd screen orientation "$1"
 }
 
 set_lcd_mode() {
-	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen "$1" "$2"
+	liquidctl --match "${LC_NAME}" set lcd screen "$1" "$2"
 }
 
 _set_lcd_brightness() {
-	liquidctl --match "${LIQUID_COOLER_NAME}" set lcd screen brightness "${BRIGHTNESS}"
+	liquidctl --match "${LC_NAME}" set lcd screen brightness "${BRIGHTNESS}"
 }
 
 _set_pump_speed() (
 	IFS=,
-	liquidctl --match "${LIQUID_COOLER_NAME}" set pump speed ${SPEED[*]}
+	liquidctl --match "${LC_NAME}" set pump speed ${SPEED[*]}
 )
 
 _init_coproc_jq() {
@@ -356,7 +356,7 @@ refresh_display() {
 
 _main() {
 
-	[[ -z $GIF ]] && echo "GIF not set!" >&2 && return 1
+	[[ -z $GIF ]] && echo "Warning! GIF not set" >&2
 
 	local OPTARG OPTIND flag
 	while getopts "b:lgs:c:tmdpho:" flag; do
