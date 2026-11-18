@@ -77,6 +77,8 @@ init() {
 	fi
 
 	[[ -z $JQ_PID ]] && _init_coproc_jq
+
+	return 0
 }
 
 cleanup() {
@@ -398,8 +400,9 @@ _main() {
 	esac
 }
 
-init
-
 if ! (return 2>/dev/null); then
+	init || exit $?
 	_main "$@"
+else
+	init
 fi
